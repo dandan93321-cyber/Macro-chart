@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 
-<meta name="viewport"
-      content="width=device-width,
-               initial-scale=1.0,
-               viewport-fit=cover">
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+>
 
 <title>總體經濟指標</title>
 
@@ -22,8 +22,10 @@ html,
 body {
   margin: 0;
   padding: 0;
+
   width: 100%;
   min-width: 0;
+
   overflow: hidden;
 }
 
@@ -43,17 +45,21 @@ body {
   padding: 6px;
 }
 
-/* =========================
-   Main Card
-========================= */
+
+/* =================================
+   MAIN CARD
+================================= */
 
 .card {
+
   width: 100%;
-  max-width: none;
+
+  margin: 0;
 
   background: #1e293b;
 
   border: 1px solid #334155;
+
   border-radius: 14px;
 
   padding: 12px;
@@ -62,56 +68,77 @@ body {
 }
 
 
-/* =========================
-   Header
-========================= */
+/* =================================
+   HEADER
+================================= */
 
 .title {
+
   font-size: 18px;
+
   font-weight: 700;
-  margin-bottom: 3px;
+
+  line-height: 1.2;
+
+  margin: 0 0 3px 0;
 }
+
 
 .subtitle {
+
   color: #94a3b8;
+
   font-size: 11px;
-  margin-bottom: 9px;
+
+  line-height: 1.3;
+
+  margin: 0 0 9px 0;
 }
 
 
-/* =========================
-   Buttons
-========================= */
+/* =================================
+   CONTROL BUTTONS
+================================= */
 
 .controls {
+
   display: flex;
+
   flex-wrap: wrap;
 
   gap: 6px;
 
-  margin-bottom: 8px;
-
   width: 100%;
+
+  margin: 0 0 8px 0;
 }
 
+
 .btn {
+
   appearance: none;
+
   -webkit-appearance: none;
 
   background: #334155;
+
   color: #cbd5e1;
 
   border: 1px solid #475569;
 
   border-radius: 18px;
 
-  padding: 7px 11px;
+  padding: 6px 10px;
 
   min-height: 32px;
 
   font-family: inherit;
+
   font-size: 11px;
+
   font-weight: 600;
+
+  line-height: 1;
 
   white-space: nowrap;
 
@@ -122,117 +149,165 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+
 .btn:active {
+
   transform: scale(0.97);
 }
 
+
 .btn.active {
-  color: white;
+
+  color: #ffffff;
+
   border-color: transparent;
 }
 
+
 .btn-cpi.active {
+
   background: #38bdf8;
 }
 
+
 .btn-unemp.active {
+
   background: #f43f5e;
 }
 
+
 .btn-oil.active {
+
   background: #eab308;
+
   color: #111827;
 }
 
+
 .btn-thresh.active {
+
   background: #a855f7;
 }
 
 
-/* =========================
-   Chart Area
-========================= */
+/* =================================
+   CHART
+================================= */
 
 .chart-container {
+
   position: relative;
 
   width: 100%;
 
-  height: 330px;
+  /*
+    關鍵設定：
+
+    讓圖表足夠大，
+    但不超出 Notion Embed。
+  */
+
+  height: 270px;
 
   overflow: hidden;
 }
 
+
 canvas {
+
   display: block;
 
   width: 100% !important;
+
   height: 100% !important;
 }
 
 
-/* =========================
-   iPad Portrait
-========================= */
+/* =================================
+   iPAD PORTRAIT
+================================= */
 
-@media (max-width: 700px) {
+@media (max-width: 900px) {
 
   body {
-    padding: 5px;
+
+    padding: 4px;
   }
 
+
   .card {
+
     padding: 9px;
+
     border-radius: 12px;
   }
 
+
   .title {
+
     font-size: 17px;
   }
+
 
   .subtitle {
+
     font-size: 10px;
+
     margin-bottom: 7px;
   }
 
+
   .controls {
+
     gap: 5px;
-    margin-bottom: 7px;
-  }
 
-  .btn {
-    font-size: 10px;
-    min-height: 31px;
-    padding: 6px 9px;
-  }
-
-  .chart-container {
-    height: 310px;
-  }
-}
-
-
-/* =========================
-   iPad Landscape
-========================= */
-
-@media (orientation: landscape) {
-
-  .card {
-    padding: 10px 12px;
-  }
-
-  .title {
-    font-size: 17px;
-  }
-
-  .controls {
     margin-bottom: 6px;
   }
 
-  .chart-container {
-    height: 330px;
+
+  .btn {
+
+    font-size: 10px;
+
+    min-height: 30px;
+
+    padding: 6px 8px;
   }
+
+
+  .chart-container {
+
+    height: 255px;
+  }
+
+}
+
+
+/* =================================
+   iPAD LANDSCAPE
+================================= */
+
+@media (orientation: landscape) {
+
+  .chart-container {
+
+    height: 285px;
+  }
+
+}
+
+
+/* =================================
+   VERY SHORT EMBED
+================================= */
+
+@media (max-height: 500px) {
+
+  .chart-container {
+
+    height: 220px;
+  }
+
 }
 
 </style>
@@ -241,60 +316,83 @@ canvas {
 
 <body>
 
+
 <div class="card">
+
+
+  <!-- HEADER -->
 
   <div class="title">
     📊 總體經濟指標
   </div>
+
 
   <div class="subtitle">
     CPI・失業率・原油價格・警戒線
   </div>
 
 
+  <!-- BUTTONS -->
+
   <div class="controls">
+
 
     <button
       class="btn btn-cpi active"
-      onclick="toggleDataset(0, this)">
+      onclick="toggleDataset(0, this)"
+    >
       CPI 通膨率 (%)
     </button>
 
+
     <button
       class="btn btn-unemp active"
-      onclick="toggleDataset(1, this)">
+      onclick="toggleDataset(1, this)"
+    >
       失業率 (%)
     </button>
 
+
     <button
       class="btn btn-oil active"
-      onclick="toggleDataset(2, this)">
+      onclick="toggleDataset(2, this)"
+    >
       原油價格 ($/桶)
     </button>
 
+
     <button
       class="btn btn-thresh active"
-      onclick="toggleThresholds(this)">
+      onclick="toggleThresholds(this)"
+    >
       🚨 警戒線
     </button>
 
+
   </div>
 
+
+  <!-- CHART -->
 
   <div class="chart-container">
+
     <canvas id="macroChart"></canvas>
+
   </div>
+
 
 </div>
 
 
 <script>
 
-/* =========================
-   Data
-========================= */
+
+/* =================================
+   MONTHS
+================================= */
 
 const months = [
+
   "2026/01",
   "2026/02",
   "2026/03",
@@ -303,12 +401,13 @@ const months = [
   "2026/06",
   "2026/07",
   "2026/08"
+
 ];
 
 
-/* =========================
-   Chart
-========================= */
+/* =================================
+   CHART
+================================= */
 
 const ctx =
   document
@@ -318,18 +417,29 @@ const ctx =
 
 const chart = new Chart(ctx, {
 
+
   type: "line",
+
 
   data: {
 
+
     labels: months,
+
 
     datasets: [
 
+
+      /* =========================
+         CPI
+      ========================= */
+
       {
+
         label: "CPI (%)",
 
         data: [
+
           3.9,
           3.8,
           3.7,
@@ -338,26 +448,36 @@ const chart = new Chart(ctx, {
           3.5,
           3.4,
           3.4
+
         ],
 
         borderColor: "#38bdf8",
+
         backgroundColor: "#38bdf820",
 
         borderWidth: 3,
 
-        pointRadius: 4,
-        pointHoverRadius: 7,
+        pointRadius: 3,
+
+        pointHoverRadius: 6,
 
         tension: 0.3,
 
         yAxisID: "y"
+
       },
 
 
+      /* =========================
+         UNEMPLOYMENT
+      ========================= */
+
       {
+
         label: "失業率 (%)",
 
         data: [
+
           3.8,
           3.8,
           3.9,
@@ -366,26 +486,36 @@ const chart = new Chart(ctx, {
           4.0,
           4.1,
           4.1
+
         ],
 
         borderColor: "#f43f5e",
+
         backgroundColor: "#f43f5e20",
 
         borderWidth: 3,
 
-        pointRadius: 4,
-        pointHoverRadius: 7,
+        pointRadius: 3,
+
+        pointHoverRadius: 6,
 
         tension: 0.3,
 
         yAxisID: "y"
+
       },
 
 
+      /* =========================
+         OIL
+      ========================= */
+
       {
+
         label: "油價 ($)",
 
         data: [
+
           76,
           78,
           80,
@@ -394,115 +524,142 @@ const chart = new Chart(ctx, {
           84,
           88,
           90
+
         ],
 
         borderColor: "#eab308",
+
         backgroundColor: "#eab30820",
 
         borderWidth: 3,
 
-        pointRadius: 4,
-        pointHoverRadius: 7,
+        pointRadius: 3,
+
+        pointHoverRadius: 6,
 
         tension: 0.3,
 
         yAxisID: "yOil"
+
       },
 
 
-      /* CPI Threshold */
+      /* =========================
+         CPI THRESHOLD
+      ========================= */
 
       {
+
         label: "CPI 警戒線 (3.5%)",
 
         data: Array(8).fill(3.5),
 
         borderColor: "#38bdf8",
 
-        borderDash: [7, 7],
+        borderDash: [6, 6],
 
         borderWidth: 2,
 
         pointRadius: 0,
 
         yAxisID: "y"
+
       },
 
 
-      /* Sahm Rule */
+      /* =========================
+         SAHM RULE
+      ========================= */
 
       {
+
         label: "薩姆規則警戒線 (4.3%)",
 
         data: Array(8).fill(4.3),
 
         borderColor: "#f43f5e",
 
-        borderDash: [7, 7],
+        borderDash: [6, 6],
 
         borderWidth: 2,
 
         pointRadius: 0,
 
         yAxisID: "y"
+
       },
 
 
-      /* Oil Threshold */
+      /* =========================
+         OIL THRESHOLD
+      ========================= */
 
       {
+
         label: "油價警戒線 ($90)",
 
         data: Array(8).fill(90),
 
         borderColor: "#eab308",
 
-        borderDash: [7, 7],
+        borderDash: [6, 6],
 
         borderWidth: 2,
 
         pointRadius: 0,
 
         yAxisID: "yOil"
+
       }
 
     ]
+
   },
 
 
+  /* =================================
+     OPTIONS
+  ================================= */
+
   options: {
+
 
     responsive: true,
 
+
     maintainAspectRatio: false,
 
+
+    animation: {
+
+      duration: 200
+
+    },
+
+
     interaction: {
+
       mode: "index",
+
       intersect: false
+
     },
 
 
     plugins: {
 
+
+      /*
+        不顯示 Legend
+
+        這是本版本的重要設定，
+        可以避免底部被裁切。
+      */
+
       legend: {
-        display: true,
 
-        position: "bottom",
+        display: false
 
-        labels: {
-
-          color: "#cbd5e1",
-
-          padding: 12,
-
-          boxWidth: 28,
-
-          boxHeight: 2,
-
-          font: {
-            size: 10
-          }
-        }
       },
 
 
@@ -520,9 +677,10 @@ const chart = new Chart(ctx, {
 
         bodyColor: "#cbd5e1",
 
-        padding: 10,
+        padding: 9,
 
         displayColors: true
+
       }
 
     },
@@ -530,29 +688,49 @@ const chart = new Chart(ctx, {
 
     scales: {
 
+
+      /* =========================
+         X AXIS
+      ========================= */
+
       x: {
 
+        offset: false,
+
         grid: {
+
           color: "#33415545"
+
         },
+
 
         ticks: {
 
           color: "#cbd5e1",
 
           font: {
+
             size: 10
+
           },
+
 
           autoSkip: false,
 
           maxRotation: 0,
 
-          minRotation: 0
+          minRotation: 0,
+
+          padding: 4
+
         }
 
       },
 
+
+      /* =========================
+         LEFT AXIS
+      ========================= */
 
       y: {
 
@@ -564,25 +742,42 @@ const chart = new Chart(ctx, {
 
         max: 6,
 
+
         grid: {
+
           color: "#33415545"
+
         },
+
 
         ticks: {
 
           color: "#94a3b8",
 
           font: {
+
             size: 10
+
           },
 
+
+          padding: 4,
+
+
           callback: function(value) {
+
             return value + "%";
+
           }
+
         }
 
       },
 
+
+      /* =========================
+         RIGHT AXIS
+      ========================= */
 
       yOil: {
 
@@ -594,21 +789,34 @@ const chart = new Chart(ctx, {
 
         max: 110,
 
+
         grid: {
+
           drawOnChartArea: false
+
         },
+
 
         ticks: {
 
           color: "#eab308",
 
           font: {
+
             size: 10
+
           },
 
+
+          padding: 4,
+
+
           callback: function(value) {
+
             return "$" + value;
+
           }
+
         }
 
       }
@@ -620,63 +828,115 @@ const chart = new Chart(ctx, {
 });
 
 
-/* =========================
-   Toggle Main Dataset
-========================= */
+/* =================================
+   TOGGLE DATASET
+================================= */
 
 function toggleDataset(index, btn) {
+
 
   const visible =
     chart.isDatasetVisible(index);
 
+
   chart.setDatasetVisibility(
+
     index,
+
     !visible
+
   );
+
 
   btn.classList.toggle(
+
     "active",
+
     !visible
+
   );
 
+
   chart.update();
+
 }
 
 
-/* =========================
-   Toggle Thresholds
-========================= */
+/* =================================
+   TOGGLE THRESHOLDS
+================================= */
 
 function toggleThresholds(btn) {
+
 
   const active =
     btn.classList.toggle("active");
 
+
   [3, 4, 5].forEach(function(index) {
 
+
     chart.setDatasetVisibility(
+
       index,
+
       active
+
     );
+
 
   });
 
+
   chart.update();
+
 }
 
 
-/* =========================
-   Resize
-========================= */
+/* =================================
+   RESIZE
+================================= */
 
 window.addEventListener(
+
   "resize",
+
   function() {
+
     chart.resize();
+
   }
+
 );
 
+
+/* =================================
+   RESIZE OBSERVER
+
+   特別針對 Notion Embed
+================================= */
+
+if (window.ResizeObserver) {
+
+
+  const observer =
+    new ResizeObserver(function() {
+
+      chart.resize();
+
+    });
+
+
+  observer.observe(
+
+    document.querySelector(".card")
+
+  );
+
+}
+
 </script>
+
 
 </body>
 </html>
