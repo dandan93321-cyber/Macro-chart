@@ -1,420 +1,682 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Macro Dashboard</title>
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    * {
-      box-sizing: border-box;
-    }
-    html,
-    body {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      min-height: 100%;
-    }
-    body {
-      font-family:
-        -apple-system,
-        BlinkMacSystemFont,
-        "SF Pro Display",
-        "SF Pro Text",
-        "Segoe UI",
-        Roboto,
-        Arial,
-        sans-serif;
-      background: #0f172a;
-      color: #f8fafc;
-      padding:
-        max(12px, env(safe-area-inset-top))
-        max(12px, env(safe-area-inset-right))
-        max(12px, env(safe-area-inset-bottom))
-        max(12px, env(safe-area-inset-left));
-    }
-    .card {
-      width: 100%;
-      max-width: 1200px;
-      margin: 0 auto;
-      background: #1e293b;
-      border: 1px solid #334155;
-      border-radius: 16px;
-      padding: clamp(14px, 3vw, 24px);
-      box-shadow:
-        0 6px 20px rgba(0, 0, 0, 0.28);
-    }
-    .title {
-      font-size: clamp(18px, 3vw, 24px);
-      font-weight: 700;
-      margin-bottom: 14px;
-      letter-spacing: -0.02em;
-    }
-    .subtitle {
-      color: #94a3b8;
-      font-size: 13px;
-      margin-bottom: 18px;
-    }
-    .controls {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 18px;
-    }
-    .btn {
-      appearance: none;
-      -webkit-appearance: none;
-      background: #334155;
-      color: #cbd5e1;
-      border: 1px solid #475569;
-      padding: 10px 14px;
-      min-height: 42px;
-      border-radius: 22px;
-      font-family: inherit;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      transition:
-        background 0.15s ease,
-        border-color 0.15s ease,
-        color 0.15s ease,
-        transform 0.1s ease;
-      -webkit-tap-highlight-color: transparent;
-      touch-action: manipulation;
-    }
-    .btn:active {
-      transform: scale(0.97);
-    }
-    .btn.active {
-      color: #ffffff;
-      border-color: transparent;
-    }
-    .btn-cpi.active {
-      background: #38bdf8;
-    }
-    .btn-unemp.active {
-      background: #f43f5e;
-    }
-    .btn-oil.active {
-      background: #eab308;
-      color: #111827;
-    }
-    .btn-thresh.active {
-      background: #a855f7;
-    }
-    .chart-container {
-      position: relative;
-      width: 100%;
-      height: clamp(300px, 50vw, 420px);
-    }
-    canvas {
-      width: 100% !important;
-      height: 100% !important;
-    }
-    .note {
-      margin-top: 12px;
-      color: #64748b;
-      font-size: 11px;
-      line-height: 1.5;
-    }
-    @media (max-width: 600px) {
-      body {
-        padding: 8px;
-      }
-      .card {
-        border-radius: 12px;
-        padding: 12px;
-      }
-      .controls {
-        gap: 6px;
-      }
-      .btn {
-        flex: 1 1 auto;
-        min-width: 135px;
-        font-size: 12px;
-        padding: 9px 10px;
-      }
-      .chart-container {
-        height: 300px;
-      }
-    }
-  </style>
+<meta charset="UTF-8">
+
+<meta name="viewport"
+      content="width=device-width,
+               initial-scale=1.0,
+               viewport-fit=cover">
+
+<title>總體經濟指標</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+body {
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "SF Pro Text",
+    "Segoe UI",
+    Roboto,
+    Arial,
+    sans-serif;
+
+  background: #0f172a;
+  color: #f8fafc;
+
+  padding: 6px;
+}
+
+/* =========================
+   Main Card
+========================= */
+
+.card {
+  width: 100%;
+  max-width: none;
+
+  background: #1e293b;
+
+  border: 1px solid #334155;
+  border-radius: 14px;
+
+  padding: 12px;
+
+  overflow: hidden;
+}
+
+
+/* =========================
+   Header
+========================= */
+
+.title {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 3px;
+}
+
+.subtitle {
+  color: #94a3b8;
+  font-size: 11px;
+  margin-bottom: 9px;
+}
+
+
+/* =========================
+   Buttons
+========================= */
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+
+  gap: 6px;
+
+  margin-bottom: 8px;
+
+  width: 100%;
+}
+
+.btn {
+  appearance: none;
+  -webkit-appearance: none;
+
+  background: #334155;
+  color: #cbd5e1;
+
+  border: 1px solid #475569;
+
+  border-radius: 18px;
+
+  padding: 7px 11px;
+
+  min-height: 32px;
+
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+
+  white-space: nowrap;
+
+  cursor: pointer;
+
+  touch-action: manipulation;
+
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn.active {
+  color: white;
+  border-color: transparent;
+}
+
+.btn-cpi.active {
+  background: #38bdf8;
+}
+
+.btn-unemp.active {
+  background: #f43f5e;
+}
+
+.btn-oil.active {
+  background: #eab308;
+  color: #111827;
+}
+
+.btn-thresh.active {
+  background: #a855f7;
+}
+
+
+/* =========================
+   Chart Area
+========================= */
+
+.chart-container {
+  position: relative;
+
+  width: 100%;
+
+  height: 330px;
+
+  overflow: hidden;
+}
+
+canvas {
+  display: block;
+
+  width: 100% !important;
+  height: 100% !important;
+}
+
+
+/* =========================
+   iPad Portrait
+========================= */
+
+@media (max-width: 700px) {
+
+  body {
+    padding: 5px;
+  }
+
+  .card {
+    padding: 9px;
+    border-radius: 12px;
+  }
+
+  .title {
+    font-size: 17px;
+  }
+
+  .subtitle {
+    font-size: 10px;
+    margin-bottom: 7px;
+  }
+
+  .controls {
+    gap: 5px;
+    margin-bottom: 7px;
+  }
+
+  .btn {
+    font-size: 10px;
+    min-height: 31px;
+    padding: 6px 9px;
+  }
+
+  .chart-container {
+    height: 310px;
+  }
+}
+
+
+/* =========================
+   iPad Landscape
+========================= */
+
+@media (orientation: landscape) {
+
+  .card {
+    padding: 10px 12px;
+  }
+
+  .title {
+    font-size: 17px;
+  }
+
+  .controls {
+    margin-bottom: 6px;
+  }
+
+  .chart-container {
+    height: 330px;
+  }
+}
+
+</style>
 </head>
+
+
 <body>
-  <div class="card">
-<div class="title">
-  📊 Macro Economic Dashboard
-</div>
-<div class="subtitle">
-  CPI・失業率・原油價格・警戒線
-</div>
-<div class="controls">
-  <button
-    class="btn btn-cpi active"
-    onclick="toggleDataset(0, this)"
-  >
-    CPI 通膨率 (%)
-  </button>
-  <button
-    class="btn btn-unemp active"
-    onclick="toggleDataset(1, this)"
-  >
-    失業率 (%)
-  </button>
-  <button
-    class="btn btn-oil active"
-    onclick="toggleDataset(2, this)"
-  >
-    原油價格 ($/桶)
-  </button>
-  <button
-    class="btn btn-thresh active"
-    onclick="toggleThresholds(this)"
-  >
-    警戒線 Thresholds
-  </button>
-</div>
-<div class="chart-container">
-  <canvas id="macroChart"></canvas>
-</div>
-<div class="note">
-  ※ 圖表中的數據為示範數據，可在 HTML 中自行修改。
-</div>
+
+<div class="card">
+
+  <div class="title">
+    📊 總體經濟指標
   </div>
-  <script>
-    const ctx =
-      document
-        .getElementById("macroChart")
-        .getContext("2d");
-    const months = [
-      "2026/01",
-      "2026/02",
-      "2026/03",
-      "2026/04",
-      "2026/05",
-      "2026/06",
-      "2026/07",
-      "2026/08"
-    ];
-    const chart = new Chart(ctx, {
-      type: "line",
-      data: {
-        labels: months,
-        datasets: [
-          /* =========================
-             CPI
-          ========================== */
-          {
-            label: "CPI (%)",
-            data: [
-              3.9,
-              3.8,
-              3.7,
-              3.6,
-              3.5,
-              3.5,
-              3.4,
-              3.4
-            ],
-            borderColor: "#38bdf8",
-            backgroundColor: "#38bdf820",
-            borderWidth: 3,
-            pointRadius: 3,
-            pointHoverRadius: 6,
-            tension: 0.3,
-            yAxisID: "y"
-          },
-          /* =========================
-             Unemployment
-          ========================== */
-          {
-            label: "失業率 (%)",
-            data: [
-              3.8,
-              3.8,
-              3.9,
-              3.9,
-              4.0,
-              4.0,
-              4.1,
-              4.1
-            ],
-            borderColor: "#f43f5e",
-            backgroundColor: "#f43f5e20",
-            borderWidth: 3,
-            pointRadius: 3,
-            pointHoverRadius: 6,
-            tension: 0.3,
-            yAxisID: "y"
-          },
-          /* =========================
-             Oil
-          ========================== */
-          {
-            label: "油價 ($)",
-            data: [
-              76,
-              78,
-              80,
-              82,
-              85,
-              84,
-              88,
-              90
-            ],
-            borderColor: "#eab308",
-            backgroundColor: "#eab30820",
-            borderWidth: 3,
-            pointRadius: 3,
-            pointHoverRadius: 6,
-            tension: 0.3,
-            yAxisID: "yOil"
-          },
-          /* =========================
-             CPI Threshold
-          ========================== */
-          {
-            label: "CPI 警戒線 (3.5%)",
-            data: Array(8).fill(3.5),
-            borderColor: "#38bdf880",
-            borderDash: [6, 6],
-            borderWidth: 2,
-            pointRadius: 0,
-            yAxisID: "y"
-          },
-          /* =========================
-             Sahm Rule Threshold
-          ========================== */
-          {
-            label: "薩姆規則警戒線 (4.3%)",
-            data: Array(8).fill(4.3),
-            borderColor: "#f43f5e80",
-            borderDash: [6, 6],
-            borderWidth: 2,
-            pointRadius: 0,
-            yAxisID: "y"
-          },
-          /* =========================
-             Oil Threshold
-          ========================== */
-          {
-            label: "油價警戒線 ($90)",
-            data: Array(8).fill(90),
-            borderColor: "#eab30880",
-            borderDash: [6, 6],
-            borderWidth: 2,
-            pointRadius: 0,
-            yAxisID: "yOil"
-          }
-        ]
+
+  <div class="subtitle">
+    CPI・失業率・原油價格・警戒線
+  </div>
+
+
+  <div class="controls">
+
+    <button
+      class="btn btn-cpi active"
+      onclick="toggleDataset(0, this)">
+      CPI 通膨率 (%)
+    </button>
+
+    <button
+      class="btn btn-unemp active"
+      onclick="toggleDataset(1, this)">
+      失業率 (%)
+    </button>
+
+    <button
+      class="btn btn-oil active"
+      onclick="toggleDataset(2, this)">
+      原油價格 ($/桶)
+    </button>
+
+    <button
+      class="btn btn-thresh active"
+      onclick="toggleThresholds(this)">
+      🚨 警戒線
+    </button>
+
+  </div>
+
+
+  <div class="chart-container">
+    <canvas id="macroChart"></canvas>
+  </div>
+
+</div>
+
+
+<script>
+
+/* =========================
+   Data
+========================= */
+
+const months = [
+  "2026/01",
+  "2026/02",
+  "2026/03",
+  "2026/04",
+  "2026/05",
+  "2026/06",
+  "2026/07",
+  "2026/08"
+];
+
+
+/* =========================
+   Chart
+========================= */
+
+const ctx =
+  document
+    .getElementById("macroChart")
+    .getContext("2d");
+
+
+const chart = new Chart(ctx, {
+
+  type: "line",
+
+  data: {
+
+    labels: months,
+
+    datasets: [
+
+      {
+        label: "CPI (%)",
+
+        data: [
+          3.9,
+          3.8,
+          3.7,
+          3.6,
+          3.5,
+          3.5,
+          3.4,
+          3.4
+        ],
+
+        borderColor: "#38bdf8",
+        backgroundColor: "#38bdf820",
+
+        borderWidth: 3,
+
+        pointRadius: 4,
+        pointHoverRadius: 7,
+
+        tension: 0.3,
+
+        yAxisID: "y"
       },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        interaction: {
-          mode: "index",
-          intersect: false
-        },
-        plugins: {
-          legend: {
-            display: false
-          },
-          tooltip: {
-            enabled: true,
-            backgroundColor: "#0f172a",
-            borderColor: "#475569",
-            borderWidth: 1,
-            titleColor: "#f8fafc",
-            bodyColor: "#cbd5e1",
-            padding: 12,
-            displayColors: true
-          }
-        },
-        scales: {
-          x: {
-            grid: {
-              color: "#33415540"
-            },
-            ticks: {
-              color: "#94a3b8",
-              maxRotation: 0,
-              autoSkip: true
-            }
-          },
-          y: {
-            type: "linear",
-            position: "left",
-            min: 2,
-            max: 6,
-            grid: {
-              color: "#33415540"
-            },
-            ticks: {
-              color: "#94a3b8",
-              callback: function(value) {
-                return value + "%";
-              }
-            }
-          },
-          yOil: {
-            type: "linear",
-            position: "right",
-            min: 60,
-            max: 110,
-            grid: {
-              drawOnChartArea: false
-            },
-            ticks: {
-              color: "#eab308",
-              callback: function(value) {
-                return "$" + value;
-              }
-            }
+
+
+      {
+        label: "失業率 (%)",
+
+        data: [
+          3.8,
+          3.8,
+          3.9,
+          3.9,
+          4.0,
+          4.0,
+          4.1,
+          4.1
+        ],
+
+        borderColor: "#f43f5e",
+        backgroundColor: "#f43f5e20",
+
+        borderWidth: 3,
+
+        pointRadius: 4,
+        pointHoverRadius: 7,
+
+        tension: 0.3,
+
+        yAxisID: "y"
+      },
+
+
+      {
+        label: "油價 ($)",
+
+        data: [
+          76,
+          78,
+          80,
+          82,
+          85,
+          84,
+          88,
+          90
+        ],
+
+        borderColor: "#eab308",
+        backgroundColor: "#eab30820",
+
+        borderWidth: 3,
+
+        pointRadius: 4,
+        pointHoverRadius: 7,
+
+        tension: 0.3,
+
+        yAxisID: "yOil"
+      },
+
+
+      /* CPI Threshold */
+
+      {
+        label: "CPI 警戒線 (3.5%)",
+
+        data: Array(8).fill(3.5),
+
+        borderColor: "#38bdf8",
+
+        borderDash: [7, 7],
+
+        borderWidth: 2,
+
+        pointRadius: 0,
+
+        yAxisID: "y"
+      },
+
+
+      /* Sahm Rule */
+
+      {
+        label: "薩姆規則警戒線 (4.3%)",
+
+        data: Array(8).fill(4.3),
+
+        borderColor: "#f43f5e",
+
+        borderDash: [7, 7],
+
+        borderWidth: 2,
+
+        pointRadius: 0,
+
+        yAxisID: "y"
+      },
+
+
+      /* Oil Threshold */
+
+      {
+        label: "油價警戒線 ($90)",
+
+        data: Array(8).fill(90),
+
+        borderColor: "#eab308",
+
+        borderDash: [7, 7],
+
+        borderWidth: 2,
+
+        pointRadius: 0,
+
+        yAxisID: "yOil"
+      }
+
+    ]
+  },
+
+
+  options: {
+
+    responsive: true,
+
+    maintainAspectRatio: false,
+
+    interaction: {
+      mode: "index",
+      intersect: false
+    },
+
+
+    plugins: {
+
+      legend: {
+        display: true,
+
+        position: "bottom",
+
+        labels: {
+
+          color: "#cbd5e1",
+
+          padding: 12,
+
+          boxWidth: 28,
+
+          boxHeight: 2,
+
+          font: {
+            size: 10
           }
         }
+      },
+
+
+      tooltip: {
+
+        enabled: true,
+
+        backgroundColor: "#0f172a",
+
+        borderColor: "#475569",
+
+        borderWidth: 1,
+
+        titleColor: "#ffffff",
+
+        bodyColor: "#cbd5e1",
+
+        padding: 10,
+
+        displayColors: true
       }
-    });
-    /* =================================
-       Toggle main datasets
-    ================================= */
-    function toggleDataset(index, btn) {
-      const isVisible =
-        chart.isDatasetVisible(index);
-      chart.setDatasetVisibility(
-        index,
-        !isVisible
-      );
-      btn.classList.toggle(
-        "active",
-        !isVisible
-      );
-      chart.update();
-    }
-    /* =================================
-       Toggle threshold lines
-    ================================= */
-    function toggleThresholds(btn) {
-      const active =
-        btn.classList.toggle("active");
-      [3, 4, 5].forEach(function(index) {
-        chart.setDatasetVisibility(
-          index,
-          active
-        );
-      });
-      chart.update();
-    }
-    /* =================================
-       Resize when embedded in Notion
-    ================================= */
-    window.addEventListener(
-      "resize",
-      function() {
-        chart.resize();
+
+    },
+
+
+    scales: {
+
+      x: {
+
+        grid: {
+          color: "#33415545"
+        },
+
+        ticks: {
+
+          color: "#cbd5e1",
+
+          font: {
+            size: 10
+          },
+
+          autoSkip: false,
+
+          maxRotation: 0,
+
+          minRotation: 0
+        }
+
+      },
+
+
+      y: {
+
+        type: "linear",
+
+        position: "left",
+
+        min: 2.5,
+
+        max: 6,
+
+        grid: {
+          color: "#33415545"
+        },
+
+        ticks: {
+
+          color: "#94a3b8",
+
+          font: {
+            size: 10
+          },
+
+          callback: function(value) {
+            return value + "%";
+          }
+        }
+
+      },
+
+
+      yOil: {
+
+        type: "linear",
+
+        position: "right",
+
+        min: 60,
+
+        max: 110,
+
+        grid: {
+          drawOnChartArea: false
+        },
+
+        ticks: {
+
+          color: "#eab308",
+
+          font: {
+            size: 10
+          },
+
+          callback: function(value) {
+            return "$" + value;
+          }
+        }
+
       }
+
+    }
+
+  }
+
+});
+
+
+/* =========================
+   Toggle Main Dataset
+========================= */
+
+function toggleDataset(index, btn) {
+
+  const visible =
+    chart.isDatasetVisible(index);
+
+  chart.setDatasetVisibility(
+    index,
+    !visible
+  );
+
+  btn.classList.toggle(
+    "active",
+    !visible
+  );
+
+  chart.update();
+}
+
+
+/* =========================
+   Toggle Thresholds
+========================= */
+
+function toggleThresholds(btn) {
+
+  const active =
+    btn.classList.toggle("active");
+
+  [3, 4, 5].forEach(function(index) {
+
+    chart.setDatasetVisibility(
+      index,
+      active
     );
-  </script>
+
+  });
+
+  chart.update();
+}
+
+
+/* =========================
+   Resize
+========================= */
+
+window.addEventListener(
+  "resize",
+  function() {
+    chart.resize();
+  }
+);
+
+</script>
+
 </body>
 </html>
