@@ -23,75 +23,24 @@ jobs:
           import csv
           import io
           import json
-          import time
           import urllib.request
-          from datetime import datetime, timezone, timedelta
-
-          # --------------------------------------------------
-          # 只抓最近約 18 個月
-          # 避免下載 FRED 幾十年的完整歷史資料造成 Timeout
-          # --------------------------------------------------
-          start_date = (
-              datetime.now(timezone.utc) - timedelta(days=550)
-          ).strftime("%Y-%m-%d")
+          from datetime import datetime, timezone
 
           SOURCES = {
-              "cpi": (
-                  "https://fred.stlouisfed.org/graph/fredgraph.csv"
-                  f"?id=CPIAUCSL&cosd={start_date}"
-              ),
-              "unemployment": (
-                  "https://fred.stlouisfed.org/graph/fredgraph.csv"
-                  f"?id=UNRATE&cosd={start_date}"
-              ),
-              "oil": (
-                  "https://fred.stlouisfed.org/graph/fredgraph.csv"
-                  f"?id=DCOILWTICO&cosd={start_date}"
-              )
+              "cpi": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=CPIAUCSL",
+              "unemployment": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=UNRATE",
+              "oil": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DCOILWTICO"
           }
 
-          # --------------------------------------------------
-          # 下載資料：120 秒 timeout + 3 次重試
-          # --------------------------------------------------
-          def download_csv(url, retries=3):
-              last_error = None
-
-              for attempt in range(1, retries + 1):
-                  try:
-                      print(f"Downloading: {url}")
-                      print(f"Attempt {attempt}/{retries}")
-
-                      req = urllib.request.Request(
-                          url,
-                          headers={
-                              "User-Agent": "Mozilla/5.0 GitHub-Actions"
-                          }
-                      )
-
-                      with urllib.request.urlopen(
-                          req,
-                          timeout=120
-                      ) as response:
-                          data = response.read().decode("utf-8")
-
-                      print(f"Downloaded {len(data)} bytes")
-                      return data
-
-                  except Exception as e:
-                      last_error = e
-                      print(f"Download failed: {e}")
-
-                      if attempt < retries:
-                          print("Retrying in 10 seconds...")
-                          time.sleep(10)
-
-              raise RuntimeError(
-                  f"Failed to download after {retries} attempts: {last_error}"
+          def download_csv(url):
+              req = urllib.request.Request(
+                  url,
+                  headers={"User-Agent": "Mozilla/5.0"}
               )
 
-          # --------------------------------------------------
-          # 讀取 FRED CSV
-          # --------------------------------------------------
+              with urllib.request.urlopen(req, timeout=60) as response:
+                  return response.read().decode("utf-8")
+
           def read_series(url):
               text = download_csv(url)
               rows = csv.DictReader(io.StringIO(text))
@@ -100,10 +49,6 @@ jobs:
 
               for row in rows:
                   date = row.get("observation_date")
-
-                  if not date:
-                      continue
-
                   keys = list(row.keys())
 
                   if len(keys) < 2:
@@ -111,7 +56,10 @@ jobs:
 
                   value = row.get(keys[1])
 
-                  if not value or value == ".":
+                  if not date or not value:
+                      continue
+
+                  if value in (".", ""):
                       continue
 
                   try:
@@ -121,25 +69,21 @@ jobs:
 
               return result
 
-          # --------------------------------------------------
+          # -------------------------
           # CPI
-          # --------------------------------------------------
-          print("Fetching CPI...")
-
+          # -------------------------
           cpi_raw = read_series(SOURCES["cpi"])
           cpi_by_date = dict(cpi_raw)
 
           cpi_inflation = []
 
           for date, value in cpi_raw:
-
               year = int(date[:4])
               month = date[5:7]
 
               previous_year = f"{year - 1}-{month}-01"
 
               if previous_year in cpi_by_date:
-
                   previous = cpi_by_date[previous_year]
 
                   inflation = ((value / previous) - 1) * 100
@@ -148,35 +92,26 @@ jobs:
                       (date, round(inflation, 2))
                   )
 
-          # --------------------------------------------------
+          # -------------------------
           # Unemployment
-          # --------------------------------------------------
-          print("Fetching unemployment...")
-
+          # -------------------------
           unemployment_raw = read_series(
               SOURCES["unemployment"]
           )
 
-          # --------------------------------------------------
+          # -------------------------
           # WTI Oil
-          # --------------------------------------------------
-          print("Fetching WTI oil...")
+          # -------------------------
+          oil_raw = read_series(SOURCES["oil"])
 
-          oil_raw = read_series(
-              SOURCES["oil"]
-          )
-
-          # --------------------------------------------------
-          # 每月取最後一筆資料
-          # --------------------------------------------------
-          def monthly_latest(series, months=12):
-
+          # -------------------------
+          # Monthly latest
+          # -------------------------
+          def monthly_latest(series, months=24):
               monthly = {}
 
               for date, value in series:
-
                   key = date[:7]
-
                   monthly[key] = (date, value)
 
               keys = sorted(monthly.keys())[-months:]
@@ -186,38 +121,109 @@ jobs:
                   for key in keys
               ]
 
+          # 保留 24 個月，
+          # 方便薩姆規則計算 12 個月低點
           cpi_monthly = monthly_latest(
               cpi_inflation,
-              12
+              24
           )
 
           unemployment_monthly = monthly_latest(
               unemployment_raw,
-              12
+              24
           )
 
           oil_monthly = monthly_latest(
               oil_raw,
-              12
+              24
           )
 
-          # --------------------------------------------------
-          # 以三組資料的月份聯集對齊
-          # --------------------------------------------------
+          # -------------------------
+          # Align months
+          # -------------------------
           months = sorted(
               set(x[0] for x in cpi_monthly)
               | set(x[0] for x in unemployment_monthly)
               | set(x[0] for x in oil_monthly)
-          )[-12:]
+          )[-24:]
 
           cpi_dict = dict(cpi_monthly)
           unemployment_dict = dict(unemployment_monthly)
           oil_dict = dict(oil_monthly)
 
+          unemployment_values = [
+              unemployment_dict.get(month)
+              for month in months
+          ]
+
+          # -------------------------
+          # Sahm Rule
+          #
+          # 3-month moving average
+          # vs.
+          # lowest unemployment rate
+          # during previous 12 months + 0.5
+          # -------------------------
+          sahm_average = []
+          sahm_threshold = []
+          sahm_triggered = []
+
+          for i in range(len(months)):
+
+              # 3-month moving average
+              if i >= 2:
+                  values_3m = unemployment_values[i-2:i+1]
+
+                  if all(v is not None for v in values_3m):
+                      avg_3m = sum(values_3m) / 3
+                  else:
+                      avg_3m = None
+              else:
+                  avg_3m = None
+
+              # Previous 12 months including current month
+              start = max(0, i - 11)
+
+              values_12m = [
+                  v
+                  for v in unemployment_values[start:i+1]
+                  if v is not None
+              ]
+
+              if len(values_12m) > 0:
+                  lowest_12m = min(values_12m)
+                  threshold = lowest_12m + 0.5
+              else:
+                  threshold = None
+
+              if (
+                  avg_3m is not None
+                  and threshold is not None
+              ):
+                  triggered = avg_3m >= threshold
+              else:
+                  triggered = False
+
+              sahm_average.append(
+                  round(avg_3m, 2)
+                  if avg_3m is not None
+                  else None
+              )
+
+              sahm_threshold.append(
+                  round(threshold, 2)
+                  if threshold is not None
+                  else None
+              )
+
+              sahm_triggered.append(triggered)
+
+          # -------------------------
+          # Final data
+          # -------------------------
           data = {
-              "last_updated": datetime.now(
-                  timezone.utc
-              ).strftime("%Y-%m-%d"),
+              "last_updated":
+                  datetime.now(timezone.utc).strftime("%Y-%m-%d"),
 
               "months": months,
 
@@ -226,28 +232,27 @@ jobs:
                   for month in months
               ],
 
-              "unemployment": [
-                  unemployment_dict.get(month)
-                  for month in months
-              ],
+              "unemployment": unemployment_values,
 
               "oil": [
                   round(oil_dict[month], 2)
                   if month in oil_dict
                   else None
                   for month in months
-              ]
+              ],
+
+              "sahm_average": sahm_average,
+
+              "sahm_threshold": sahm_threshold,
+
+              "sahm_triggered": sahm_triggered
           }
 
-          # --------------------------------------------------
-          # 寫入 data.json
-          # --------------------------------------------------
           with open(
               "data.json",
               "w",
               encoding="utf-8"
           ) as f:
-
               json.dump(
                   data,
                   f,
@@ -255,10 +260,6 @@ jobs:
                   indent=2
               )
 
-          print("")
-          print("====================================")
-          print("Economic data updated successfully")
-          print("====================================")
           print(
               json.dumps(
                   data,
@@ -266,7 +267,6 @@ jobs:
                   indent=2
               )
           )
-
           PY
 
       - name: Commit updated data
@@ -276,9 +276,6 @@ jobs:
 
           git add data.json
 
-          if git diff --cached --quiet; then
-            echo "No data changes."
-          else
-            git commit -m "Update economic data"
-            git push
-          fi
+          git diff --cached --quiet || git commit -m "Update economic data"
+
+          git push
