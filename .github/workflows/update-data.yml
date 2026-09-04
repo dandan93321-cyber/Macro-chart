@@ -23,23 +23,75 @@ jobs:
           import csv
           import io
           import json
+          import time
           import urllib.request
-          from datetime import datetime, timezone
+          from datetime import datetime, timezone, timedelta
+
+          # --------------------------------------------------
+          # 只抓最近約 18 個月
+          # 避免下載 FRED 幾十年的完整歷史資料造成 Timeout
+          # --------------------------------------------------
+          start_date = (
+              datetime.now(timezone.utc) - timedelta(days=550)
+          ).strftime("%Y-%m-%d")
 
           SOURCES = {
-              "cpi": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=CPIAUCSL",
-              "unemployment": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=UNRATE",
-              "oil": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DCOILWTICO"
+              "cpi": (
+                  "https://fred.stlouisfed.org/graph/fredgraph.csv"
+                  f"?id=CPIAUCSL&cosd={start_date}"
+              ),
+              "unemployment": (
+                  "https://fred.stlouisfed.org/graph/fredgraph.csv"
+                  f"?id=UNRATE&cosd={start_date}"
+              ),
+              "oil": (
+                  "https://fred.stlouisfed.org/graph/fredgraph.csv"
+                  f"?id=DCOILWTICO&cosd={start_date}"
+              )
           }
 
-          def download_csv(url):
-              req = urllib.request.Request(
-                  url,
-                  headers={"User-Agent": "Mozilla/5.0"}
-              )
-              with urllib.request.urlopen(req, timeout=30) as response:
-                  return response.read().decode("utf-8")
+          # --------------------------------------------------
+          # 下載資料：120 秒 timeout + 3 次重試
+          # --------------------------------------------------
+          def download_csv(url, retries=3):
+              last_error = None
 
+              for attempt in range(1, retries + 1):
+                  try:
+                      print(f"Downloading: {url}")
+                      print(f"Attempt {attempt}/{retries}")
+
+                      req = urllib.request.Request(
+                          url,
+                          headers={
+                              "User-Agent": "Mozilla/5.0 GitHub-Actions"
+                          }
+                      )
+
+                      with urllib.request.urlopen(
+                          req,
+                          timeout=120
+                      ) as response:
+                          data = response.read().decode("utf-8")
+
+                      print(f"Downloaded {len(data)} bytes")
+                      return data
+
+                  except Exception as e:
+                      last_error = e
+                      print(f"Download failed: {e}")
+
+                      if attempt < retries:
+                          print("Retrying in 10 seconds...")
+                          time.sleep(10)
+
+              raise RuntimeError(
+                  f"Failed to download after {retries} attempts: {last_error}"
+              )
+
+          # --------------------------------------------------
+          # 讀取 FRED CSV
+          # --------------------------------------------------
           def read_series(url):
               text = download_csv(url)
               rows = csv.DictReader(io.StringIO(text))
@@ -48,12 +100,18 @@ jobs:
 
               for row in rows:
                   date = row.get("observation_date")
-                  value = row.get(list(row.keys())[1])
 
-                  if not date or not value:
+                  if not date:
                       continue
 
-                  if value in (".", ""):
+                  keys = list(row.keys())
+
+                  if len(keys) < 2:
+                      continue
+
+                  value = row.get(keys[1])
+
+                  if not value or value == ".":
                       continue
 
                   try:
@@ -63,44 +121,62 @@ jobs:
 
               return result
 
-          # -------------------------
+          # --------------------------------------------------
           # CPI
-          # -------------------------
-          cpi_raw = read_series(SOURCES["cpi"])
+          # --------------------------------------------------
+          print("Fetching CPI...")
 
-          # Convert CPI index into year-over-year inflation %
+          cpi_raw = read_series(SOURCES["cpi"])
           cpi_by_date = dict(cpi_raw)
 
           cpi_inflation = []
 
           for date, value in cpi_raw:
+
               year = int(date[:4])
               month = date[5:7]
 
               previous_year = f"{year - 1}-{month}-01"
 
               if previous_year in cpi_by_date:
+
                   previous = cpi_by_date[previous_year]
+
                   inflation = ((value / previous) - 1) * 100
-                  cpi_inflation.append((date, round(inflation, 2)))
 
-          # -------------------------
+                  cpi_inflation.append(
+                      (date, round(inflation, 2))
+                  )
+
+          # --------------------------------------------------
           # Unemployment
-          # -------------------------
-          unemployment_raw = read_series(SOURCES["unemployment"])
+          # --------------------------------------------------
+          print("Fetching unemployment...")
 
-          # -------------------------
+          unemployment_raw = read_series(
+              SOURCES["unemployment"]
+          )
+
+          # --------------------------------------------------
           # WTI Oil
-          # -------------------------
-          oil_raw = read_series(SOURCES["oil"])
+          # --------------------------------------------------
+          print("Fetching WTI oil...")
 
-          # Keep the latest 12 monthly points for CPI/unemployment.
-          # Oil is converted to monthly latest available price.
+          oil_raw = read_series(
+              SOURCES["oil"]
+          )
+
+          # --------------------------------------------------
+          # 每月取最後一筆資料
+          # --------------------------------------------------
           def monthly_latest(series, months=12):
+
               monthly = {}
 
               for date, value in series:
+
                   key = date[:7]
+
                   monthly[key] = (date, value)
 
               keys = sorted(monthly.keys())[-months:]
@@ -110,13 +186,24 @@ jobs:
                   for key in keys
               ]
 
-          cpi_monthly = monthly_latest(cpi_inflation)
-          unemployment_monthly = monthly_latest(unemployment_raw)
+          cpi_monthly = monthly_latest(
+              cpi_inflation,
+              12
+          )
 
-          # Oil: latest observation in each month
-          oil_monthly = monthly_latest(oil_raw)
+          unemployment_monthly = monthly_latest(
+              unemployment_raw,
+              12
+          )
 
-          # Align all chart months
+          oil_monthly = monthly_latest(
+              oil_raw,
+              12
+          )
+
+          # --------------------------------------------------
+          # 以三組資料的月份聯集對齊
+          # --------------------------------------------------
           months = sorted(
               set(x[0] for x in cpi_monthly)
               | set(x[0] for x in unemployment_monthly)
@@ -128,27 +215,58 @@ jobs:
           oil_dict = dict(oil_monthly)
 
           data = {
-              "last_updated": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+              "last_updated": datetime.now(
+                  timezone.utc
+              ).strftime("%Y-%m-%d"),
+
               "months": months,
+
               "cpi": [
-                  cpi_dict.get(month, None)
+                  cpi_dict.get(month)
                   for month in months
               ],
+
               "unemployment": [
-                  unemployment_dict.get(month, None)
+                  unemployment_dict.get(month)
                   for month in months
               ],
+
               "oil": [
                   round(oil_dict[month], 2)
-                  if month in oil_dict else None
+                  if month in oil_dict
+                  else None
                   for month in months
               ]
           }
 
-          with open("data.json", "w", encoding="utf-8") as f:
-              json.dump(data, f, ensure_ascii=False, indent=2)
+          # --------------------------------------------------
+          # 寫入 data.json
+          # --------------------------------------------------
+          with open(
+              "data.json",
+              "w",
+              encoding="utf-8"
+          ) as f:
 
-          print(json.dumps(data, ensure_ascii=False, indent=2))
+              json.dump(
+                  data,
+                  f,
+                  ensure_ascii=False,
+                  indent=2
+              )
+
+          print("")
+          print("====================================")
+          print("Economic data updated successfully")
+          print("====================================")
+          print(
+              json.dumps(
+                  data,
+                  ensure_ascii=False,
+                  indent=2
+              )
+          )
+
           PY
 
       - name: Commit updated data
@@ -158,6 +276,9 @@ jobs:
 
           git add data.json
 
-          git diff --cached --quiet || git commit -m "Update economic data"
-
-          git push
+          if git diff --cached --quiet; then
+            echo "No data changes."
+          else
+            git commit -m "Update economic data"
+            git push
+          fi
